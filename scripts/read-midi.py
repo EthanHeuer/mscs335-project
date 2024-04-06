@@ -34,4 +34,5 @@ for note in notes:
 plt.title(SAMPLE)
 plt.xlabel("Time (ticks)")
 plt.ylabel("Midi Note")
-plt.show()
+
+plt.savefig("./read-midi-output.png")

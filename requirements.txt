@@ -1,0 +1,6 @@
+pyfluidsynth
+pandas
+pretty_midi
+seaborn
+ipython
+mido
