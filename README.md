@@ -26,7 +26,43 @@ The following instructions are for setting up the project for VS Code in WSL.
     sudo apt install python3 python3-pip
     ```
 
-### 2. Setup virtual workspace
+### 2. Setup Workspace
+
+1. Clone the repository into Ubuntu.
+2. Open the project folder in VS Code:
+   1. `cd` into the project folder.
+   2. Run `code .` to open the project in VS Code.
+
+### 3. Install Tensorflow
+
+<!-- https://web.archive.org/web/20230926140206/https://www.tensorflow.org/install/pip#windows-wsl2 -->
+
+**Note:** Make sure to install Tensorflow with GPU support.
+
+1. Install tensorflow:
+   ```
+   pip install tensorflow[and-cuda]
+   ```
+
+Full guide: [tensorflow.org/install/pip](https://www.tensorflow.org/install/pip#windows-wsl2_1)
+
+### 4. Install Other Components
+
+1. Install [FluidSynth](https://www.fluidsynth.org/):
+   ```
+   sudo apt install -y fluidsynth
+   ```
+2. Install other Python dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+### 5. Verify
+
+1. Run the `notebooks/verify.ipynb` notebook.
+
+<!--
+### Setup virtual workspace
 
 [learn.microsoft.com/en-us/windows/python/web-frameworks#install-python-pip-and-venv](https://learn.microsoft.com/en-us/windows/python/web-frameworks#install-python-pip-and-venv)
 
@@ -42,37 +78,7 @@ The following instructions are for setting up the project for VS Code in WSL.
 	```
 	source .venv/bin/activate
 	```
-
-### 3. Install Tensorflow
-
-Full guide: [tensorflow.org/install/pip](https://www.tensorflow.org/install/pip#windows-wsl2_1)
-
-**Note:** Make sure to install Tensorflow with GPU support.
-
-1. Install tensorflow:
-   ```
-   pip install tensorflow[and-cuda]
-   ```
-
-```
-curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-```
-
-### Install Components
-
-1. Install FluidSynth: [fluidsynth.org/download/](https://www.fluidsynth.org/download/)
-   ```
-   sudo apt install -y fluidsynth
-   ```
-2. Install other Python dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-### Verify
-
-1. Run `scripts/verify.ipynb`.
+-->
 
 ## Usage
 
