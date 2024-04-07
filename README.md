@@ -1,4 +1,4 @@
-# Midi Music Generation
+# MIDI Music Generation
 
 ## Description
 
