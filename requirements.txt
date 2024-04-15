@@ -1,6 +1,6 @@
-pyfluidsynth
+fluidsynth
 pandas
+matplotlib
+numpy
 pretty_midi
-seaborn
-ipython
-mido
+torch
