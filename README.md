@@ -33,20 +33,7 @@ The following instructions are for setting up the project for VS Code in WSL.
    1. `cd` into the project folder.
    2. Run `code .` to open the project in VS Code.
 
-### 3. Install Tensorflow
-
-<!-- https://web.archive.org/web/20230926140206/https://www.tensorflow.org/install/pip#windows-wsl2 -->
-
-**Note:** Make sure to install Tensorflow with GPU support.
-
-1. Install tensorflow:
-   ```
-   pip install tensorflow[and-cuda]
-   ```
-
-Full guide: [tensorflow.org/install/pip](https://www.tensorflow.org/install/pip#windows-wsl2_1)
-
-### 4. Install Other Components
+### 3. Install Other Components
 
 1. Install [FluidSynth](https://www.fluidsynth.org/):
    ```
@@ -56,10 +43,6 @@ Full guide: [tensorflow.org/install/pip](https://www.tensorflow.org/install/pip#
    ```
    pip install -r requirements.txt
    ```
-
-### 5. Verify
-
-1. Run the `notebooks/verify.ipynb` notebook.
 
 <!--
 ### Setup virtual workspace
