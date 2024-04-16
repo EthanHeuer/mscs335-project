@@ -1,4 +1,8 @@
 * text=auto
-* text eol=lf
+# * text eol=lf
 
 *.mid binary
+*.midi binary
+*.gz binary
+*.tar binary
+*.zip binary
