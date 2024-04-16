@@ -1,47 +1,52 @@
-import collections
-import datetime
-import glob
-import numpy as np
-import pandas as pd
-import pathlib
-import pretty_midi
-import seaborn as sns
-import torch
-import torch.nn as nn
-import torch.optim as optim
+import collections  
+import datetime  
+import glob  
+import numpy as np  
+import pandas as pd  
+import pathlib  
+import pretty_midi  
+import seaborn as sns  
+import torch  
+import torch.nn as nn  
+import torch.optim as optim  
 
-from IPython import display
-from matplotlib import pyplot as plt
-from typing import Optional
+from IPython import display  
+from matplotlib import pyplot as plt  
+from typing import Optional  
 
+# Set random seed for reproducibility
 seed = 42
-batch_size = 64
-learning_rate = 0.001
 torch.manual_seed(seed)
 np.random.seed(seed)
 
+# Set hyperparameters
+batch_size = 64
+learning_rate = 0.001
 _SAMPLING_RATE = 16000
 
+# Path to the MIDI files
 data_dir = pathlib.Path('data/maestro-v2.0.0')
+
+# Download and extract the MIDI files if the directory doesn't exist
 if not data_dir.exists():
-    # Use torch's download utility
     torch.hub.download_url_to_file(
         'https://storage.googleapis.com/magentadata/datasets/maestro/v2.0.0/maestro-v2.0.0-midi.zip',
         'maestro-v2.0.0-midi.zip',
     )
-    # Unzip the file (assuming you have unzip installed)
     import zipfile
     with zipfile.ZipFile('maestro-v2.0.0-midi.zip', 'r') as zip_ref:
         zip_ref.extractall('data')
 
+# Get a list of all MIDI files
 filenames = glob.glob(str(data_dir / '**/*.mid*'))
 print('Number of files:', len(filenames))
 
+# Load a sample MIDI file
 sample_file = filenames[1]
 print(sample_file)
-
 pm = pretty_midi.PrettyMIDI(sample_file)
 
+# Display a snippet of the audio
 def display_audio(pm: pretty_midi.PrettyMIDI, seconds=30):
     waveform = pm.fluidsynth(fs=_SAMPLING_RATE)
     waveform_short = waveform[:seconds * _SAMPLING_RATE]
@@ -49,16 +54,19 @@ def display_audio(pm: pretty_midi.PrettyMIDI, seconds=30):
 
 display_audio(pm)
 
+# Extract instrument information from the MIDI file
 print('Number of instruments:', len(pm.instruments))
 instrument = pm.instruments[0]
 instrument_name = pretty_midi.program_to_instrument_name(instrument.program)
 print('Instrument name:', instrument_name)
 
+# Display the first few notes of the instrument
 for i, note in enumerate(instrument.notes[:10]):
     note_name = pretty_midi.note_number_to_name(note.pitch)
     duration = note.end - note.start
     print(f'{i}: pitch={note.pitch}, note_name={note_name}, duration={duration:.4f}')
 
+# Function to convert a MIDI file to a DataFrame of notes
 def midi_to_notes(midi_file: str) -> pd.DataFrame:
     pm = pretty_midi.PrettyMIDI(midi_file)
     instrument = pm.instruments[0]
@@ -79,13 +87,11 @@ def midi_to_notes(midi_file: str) -> pd.DataFrame:
 
     return pd.DataFrame({name: np.array(value) for name, value in notes.items()})
 
+# Convert the sample MIDI file to a DataFrame of notes
 raw_notes = midi_to_notes(sample_file)
 raw_notes.head()
 
-get_note_names = np.vectorize(pretty_midi.note_number_to_name)
-sample_note_names = get_note_names(raw_notes['pitch'])
-sample_note_names[:10]
-
+# Plot a piano roll of the notes
 def plot_piano_roll(notes: pd.DataFrame, count: Optional[int] = None):
     if count:
         title = f'First {count} notes'
@@ -103,8 +109,7 @@ def plot_piano_roll(notes: pd.DataFrame, count: Optional[int] = None):
 
 plot_piano_roll(raw_notes, count=100)
 
-plot_piano_roll(raw_notes)
-
+# Function to plot distributions of pitch, step, and duration
 def plot_distributions(notes: pd.DataFrame, drop_percentile=2.5):
     plt.figure(figsize=[15, 5])
     plt.subplot(1, 3, 1)
@@ -120,6 +125,7 @@ def plot_distributions(notes: pd.DataFrame, drop_percentile=2.5):
 
 plot_distributions(raw_notes)
 
+# Function to convert notes DataFrame back to MIDI
 def notes_to_midi(
     notes: pd.DataFrame,
     out_file: str,
@@ -149,12 +155,14 @@ def notes_to_midi(
     pm.write(out_file)
     return pm
 
+# Generate a MIDI file from the notes DataFrame
 example_file = 'example.midi'
 example_pm = notes_to_midi(
     raw_notes, out_file=example_file, instrument_name=instrument_name)
 
 display_audio(example_pm)
 
+# Prepare data for training
 num_files = 5
 all_notes = []
 for f in filenames[:num_files]:
@@ -166,17 +174,19 @@ all_notes = pd.concat(all_notes)
 n_notes = len(all_notes)
 print('Number of notes parsed:', n_notes)
 
+# Convert notes to PyTorch tensors
 key_order = ['pitch', 'step', 'duration']
 train_notes = np.stack([all_notes[key] for key in key_order], axis=1)
 
 notes_ds = torch.utils.data.TensorDataset(torch.tensor(train_notes, dtype=torch.float32))
 notes_dl = torch.utils.data.DataLoader(notes_ds, batch_size=batch_size, shuffle=True)
 
+# Define the LSTM model
 class LSTMModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(LSTMModel, self).__init__()
         self.hidden_size = hidden_size
-        self.lstm = nn.LSTM(input_size, hidden_size)
+        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
         self.pitch_fc = nn.Linear(hidden_size, output_size)
         self.step_fc = nn.Linear(hidden_size, 1)
         self.duration_fc = nn.Linear(hidden_size, 1)
@@ -192,6 +202,7 @@ class LSTMModel(nn.Module):
             'duration': duration_out,
         }
 
+# Initialize the model, loss function, and optimizer
 input_size = 3
 hidden_size = 128
 output_size = 128
@@ -205,29 +216,32 @@ criterion = {
 }
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
+# Training loop
 def train(model, dataloader, criterion, optimizer, num_epochs=50):
     for epoch in range(num_epochs):
-        for batch in dataloader:
+        for inputs in dataloader:
             optimizer.zero_grad()
-            inputs = batch[0].unsqueeze(0)  # Add batch dimension
+            inputs = [inp.float() for inp in inputs]
+            inputs = torch.stack(inputs, dim=0)
             targets = {
-                'pitch': batch[0][:, 0],  # Pitch is the first element
-                'step': batch[0][:, 1].unsqueeze(1),  # Step is the second element
-                'duration': batch[0][:, 2].unsqueeze(1),  # Duration is the third element
+                'pitch': inputs[:, 0].unsqueeze(1).long(),
+                'step': inputs[:, 1].unsqueeze(1).long(),
+                'duration': inputs[:, 2].unsqueeze(1).long(),
             }
-            outputs = model(inputs)
-            loss = sum(criterion[key](outputs[key], targets[key]) for key in criterion)
+            outputs = model(inputs.unsqueeze(1))
+            loss = sum(criterion[key](outputs[key].squeeze(), targets[key].squeeze()) for key in criterion)
             loss.backward()
             optimizer.step()
 
 train(model, notes_dl, criterion, optimizer)
 
+# Function to predict the next note using the model
 def predict_next_note(
     notes: np.ndarray,
     model: LSTMModel,
     temperature: float = 1.0) -> tuple[int, float, float]:
 
-    inputs = torch.tensor(notes, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
+    inputs = torch.tensor(notes, dtype=torch.float32).unsqueeze(0)
     outputs = model(inputs)
     pitch_logits = outputs['pitch']
     step = outputs['step']
@@ -243,6 +257,7 @@ def predict_next_note(
 
     return pitch, step, duration
 
+# Generate a sequence of notes using the trained model
 temperature = 2.0
 num_predictions = 120
 
@@ -264,11 +279,14 @@ for _ in range(num_predictions):
 generated_notes = pd.DataFrame(
     generated_notes, columns=(*key_order, 'start', 'end'))
 
+# Convert the generated notes to a MIDI file and display it as audio
 out_file = 'output.mid'
 out_pm = notes_to_midi(
     generated_notes, out_file=out_file, instrument_name=instrument_name)
 display_audio(out_pm)
 
+# Plot a piano roll of the generated notes
 plot_piano_roll(generated_notes)
 
+# Plot distributions of pitch, step, and duration for the generated notes
 plot_distributions(generated_notes)
