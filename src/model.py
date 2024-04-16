@@ -3,9 +3,10 @@ from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 
 
-class Data(Dataset):
+class DataHandler(Dataset):
     def __init__(self, X):
-        self.X = torch.Tensor(X * 2.0 - 1.0).view(-1, 1, 28, 28)
+        self.X = X
+
         self.len = self.X.shape[0]
 
     def __getitem__(self, index):
@@ -18,6 +19,7 @@ class Data(Dataset):
 class LSTMModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(LSTMModel, self).__init__()
+
         self.hidden_size = hidden_size
         self.lstm = nn.LSTM(input_size, hidden_size)
         self.pitch_fc = nn.Linear(hidden_size, output_size)
@@ -29,6 +31,7 @@ class LSTMModel(nn.Module):
         pitch_out = self.pitch_fc(output)
         step_out = self.step_fc(output)
         duration_out = self.duration_fc(output)
+
         return {
             "pitch": pitch_out,
             "step": step_out,
