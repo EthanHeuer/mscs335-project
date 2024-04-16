@@ -8,23 +8,34 @@ import matplotlib.pyplot as plt
 from IPython import display
 
 
-# Parsing MIDI file code implemented from:
-# https://www.tensorflow.org/tutorials/audio/music_generation
-
-
 class MidiHandler:
+    """
+    This class is used to load, manage, and handle MIDI files.
+    https://www.tensorflow.org/tutorials/audio/music_generation
+    """
+
     def __init__(self):
         self.files = []
         self.notes = []
         self._SAMPLING_RATE = 16000
 
-    def load_files(self, path):
+    """
+    Loads MIDI files from a given path.
+    """
+
+    def load_files(self, path: str) -> list[str]:
         files = glob.glob(path)
         self.files.extend(files)
         print(f"Found {len(files)} files in {path}")
 
-    def get_midi_notes(self, midi_file) -> pd.DataFrame:
-        pm = pretty_midi.PrettyMIDI(midi_file)
+        return self.files
+
+    """
+    Gets notes from a single MIDI file.
+    """
+
+    def get_notes(self, file_name: str) -> pd.DataFrame:
+        pm = pretty_midi.PrettyMIDI(file_name)
         instrument = pm.instruments[0]
         notes = collections.defaultdict(list)
 
@@ -43,25 +54,20 @@ class MidiHandler:
 
         return pd.DataFrame({name: np.array(value) for name, value in notes.items()})
 
-    def plot_piano_roll(self, sample):
-        notes = self.get_midi_notes(sample)
+    """
+    Gets notes from a range of samples in the files list. Files can be loaded with `load_files`.
+    """
 
-        plt.figure(figsize=(20, 4))
-        plot_pitch = np.stack([notes["pitch"], notes["pitch"]], axis=0)
-        plot_start_stop = np.stack([notes["start"], notes["end"]], axis=0)
-        plt.plot(plot_start_stop, plot_pitch, color="b", marker=".")
-        plt.xlabel("Time [s]")
-        plt.ylabel("Pitch")
-        plt.title(sample)
-
-    def get_notes_from_samples(self, range_from=0, range_to=None) -> pd.DataFrame:
+    def get_notes_from_range(
+        self, range_from: int = 0, range_to: int | None = None
+    ) -> pd.DataFrame:
         all_notes = []
         file_range = self.files[range_from:range_to]
         num_files = len(file_range)
         errors = []
         for index, file in enumerate(file_range):
             try:
-                notes = self.get_midi_notes(file)
+                notes = self.get_notes(file)
                 all_notes.append(notes)
                 print(f"Loaded {index + 1}/{num_files}: {file}")
             except Exception as e:
@@ -98,6 +104,22 @@ class MidiHandler:
         pm.instruments.append(instrument)
         pm.write(out_file)
         return pm
+
+    """
+    Plots a piano roll of the notes in a sample.
+    """
+
+    def display_midi(self, file_name: str):
+        notes = self.get_notes(file_name)
+
+        plt.figure(figsize=(20, 4))
+        plot_pitch = np.stack([notes["pitch"], notes["pitch"]], axis=0)
+        plot_start_stop = np.stack([notes["start"], notes["end"]], axis=0)
+        plt.plot(plot_start_stop, plot_pitch, color="b", marker=".")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Pitch")
+        plt.title(file_name)
+        plt.show()
 
     def display_audio(self, pm, seconds=30):
         waveform = pm.fluidsynth(fs=self._SAMPLING_RATE)
