@@ -1,5 +1,8 @@
+import torch
 import midi_handler as mh
 import numpy as np
+import torch.nn as nn
+from network import Data, LSTMModel
 
 # LOAD FILES
 
@@ -20,3 +23,18 @@ key_order = ["pitch", "step", "duration"]
 all_notes.to_csv("../data/notes-output.csv", index=False)
 train_notes = np.stack([all_notes[key] for key in key_order], axis=1)
 np.save("../data/notes-output.npy", train_notes)
+
+print(train_notes.shape)
+
+input_size = 3
+hidden_size = 128
+output_size = 128
+
+model = LSTMModel(input_size, hidden_size, output_size)
+
+criterion = {
+    "pitch": nn.CrossEntropyLoss(),
+    "step": nn.MSELoss(),
+    "duration": nn.MSELoss(),
+}
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
