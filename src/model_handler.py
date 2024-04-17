@@ -28,13 +28,13 @@ class ModelHandler:
         self.criterion = None
         self.optimizer = None
 
-    def get_train_notes(self, path):
+    def get_train_notes(self, path, range_from=0, range_to=None):
         notes_file = pathlib.Path(path)
 
         if not notes_file.exists():
             print("Parsing notes from samples")
 
-            all_notes = self.midi.get_notes_from_range(0, 5)
+            all_notes = self.midi.get_notes_from_range(range_from, range_to)
             key_order = ["pitch", "step", "duration"]
             self.train_notes = torch.tensor(
                 all_notes[key_order].values, dtype=torch.float32
@@ -72,6 +72,9 @@ class ModelHandler:
         return self.data, self.loader, self.model, self.criterion, self.optimizer
 
     def train_model(self):
+        if not pathlib.Path("../data/checkpoints").exists():
+            pathlib.Path("../data/checkpoints").mkdir()
+
         model_file = pathlib.Path("../data/train.pt")
 
         if not model_file.exists():
@@ -103,6 +106,8 @@ class ModelHandler:
                 print(f"({time.time() - start_epoch:.2f}s)");
                 print(f"  Loss: {running_loss / len(self.loader)}")
 
+                torch.save(self.model.state_dict(), f"../data/checkpoints/epoch_{epoch}.pt")
+
             print(f"Training Time: {time.time() - start:.2f}s")
             torch.save(self.model.state_dict(), model_file)
         else:
@@ -121,8 +126,8 @@ class ModelHandler:
         pitch_probs = torch.softmax(pitch_logits / temperature, dim=2)
 
         pitch = torch.multinomial(pitch_probs[0, -1], 1).item()
-        step = step[0, -1].item()
-        duration = duration[0, -1].item()
+        step = step[0, -1].squeeze().item()
+        duration = duration[0, -1].squeeze().item()
 
         return pitch, step, duration
     
