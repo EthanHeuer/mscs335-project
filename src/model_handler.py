@@ -103,10 +103,12 @@ class ModelHandler:
 
                     running_loss += loss.item()
 
-                print(f"({time.time() - start_epoch:.2f}s)");
+                print(f"({time.time() - start_epoch:.2f}s)")
                 print(f"  Loss: {running_loss / len(self.loader)}")
 
-                torch.save(self.model.state_dict(), f"../data/checkpoints/epoch_{epoch}.pt")
+                torch.save(
+                    self.model.state_dict(), f"../data/checkpoints/epoch_{epoch}.pt"
+                )
 
             print(f"Training Time: {time.time() - start:.2f}s")
             torch.save(self.model.state_dict(), model_file)
@@ -115,9 +117,11 @@ class ModelHandler:
             self.model.load_state_dict(torch.load(model_file))
 
         return self.model
-    
+
     def predict_next_note(self, input_notes, temperature=1.0):
-        inputs = torch.tensor(input_notes, dtype=torch.float32).unsqueeze(0).to(self.device)
+        inputs = (
+            torch.tensor(input_notes, dtype=torch.float32).unsqueeze(0).to(self.device)
+        )
         outputs = self.model(inputs)
         pitch_logits = outputs["pitch"]
         step = outputs["step"]
@@ -130,7 +134,7 @@ class ModelHandler:
         duration = duration[0, -1].squeeze().item()
 
         return pitch, step, duration
-    
+
     def generate_notes(self, raw_notes, num_predictions, seq_length, temperature=1.0):
         key_order = ["pitch", "step", "duration"]
         sample_notes = np.stack([raw_notes[key] for key in key_order], axis=1)
@@ -148,7 +152,9 @@ class ModelHandler:
             input_notes = np.append(input_notes, np.expand_dims(input_note, 0), axis=0)
             prev_start = start
 
-        generated_notes = pd.DataFrame(generated_notes, columns=(*key_order, "start", "end"))
+        generated_notes = pd.DataFrame(
+            generated_notes, columns=(*key_order, "start", "end")
+        )
 
         out_file = "output.mid"
         out_pm = self.midi.notes_to_midi(

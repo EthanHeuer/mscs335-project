@@ -1,7 +1,6 @@
 __pycache__
 *-output.*
 .venv
-notebooks/*
-!notebooks/*.ipynb
-models/*
-src/output.mid
+conda
+output.mid
+data
