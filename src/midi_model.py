@@ -24,9 +24,14 @@ class MidiModel:
         self.epochs = 50
         self.batch_size = 64
         self.learning_rate = 0.0005
-        self.input_size = 30
+
+        self.input_size = 128
         self.hidden_size = 256
         self.output_size = 128
+
+        self.pitch_weight = 1.0
+        self.step_weight = 1.0
+        self.duration_weight = 1.0
 
         self.train_notes = None
         self.data = None
@@ -131,10 +136,10 @@ class MidiModel:
                     self.optimizer.zero_grad()
                     output = self.model(input)
 
-                    pitch_loss = self.criterion["pitch"](output["pitch"], input[:, 0].long())
-                    step_loss = self.criterion["step"](output["step"], input[:, 1].view(-1, 1))
-                    duration_loss = self.criterion["duration"](output["duration"], input[:, 2].view(-1, 1))
-                    loss = (pitch_loss + step_loss + duration_loss) * 1600.0
+                    pitch_loss = self.criterion["pitch"](output["pitch"], input[:, 0].long()) * self.pitch_weight
+                    step_loss = self.criterion["step"](output["step"], input[:, 1].view(-1, 1)) * self.step_weight
+                    duration_loss = self.criterion["duration"](output["duration"], input[:, 2].view(-1, 1)) * self.duration_weight
+                    loss = pitch_loss + step_loss + duration_loss
 
                     loss.backward()
                     self.optimizer.step()
