@@ -19,6 +19,8 @@ class MidiHandler:
         self.notes = []
         self._SAMPLING_RATE = 16000
 
+    ####################################################################################################################
+
     def load_files(self, path: str) -> list[str]:
         r"""
         Loads MIDI files from a given path.
@@ -28,7 +30,7 @@ class MidiHandler:
         self.files.extend(files)
         print(f"Found {len(files)} files in {path}")
 
-        return self.files
+    ####################################################################################################################
 
     def get_notes(self, file_name: str) -> pd.DataFrame:
         r"""
@@ -54,6 +56,8 @@ class MidiHandler:
 
         return pd.DataFrame({name: np.array(value) for name, value in notes.items()})
 
+    ####################################################################################################################
+
     def get_notes_from_range(self, range_from: int = 0, range_to: int | None = None) -> pd.DataFrame:
         r"""
         Gets notes from a range of samples in the files list. Files can be loaded with `load_files`.
@@ -78,11 +82,13 @@ class MidiHandler:
         self.notes = pd.concat(all_notes)
         return self.notes
 
-    r"""
-    TODO
-    """
+    ####################################################################################################################
 
-    def notes_to_midi(self, notes, out_file, instrument_name, velocity=100) -> pretty_midi.PrettyMIDI:
+    def notes_to_midi(self, notes, out_file: str, instrument_name: str, velocity: int = 100) -> pretty_midi.PrettyMIDI:
+        r"""
+        TODO
+        """
+
         pm = pretty_midi.PrettyMIDI()
         instrument = pretty_midi.Instrument(program=pretty_midi.instrument_name_to_program(instrument_name))
 
@@ -103,11 +109,13 @@ class MidiHandler:
         pm.write(out_file)
         return pm
 
-    r"""
-    Plots a piano roll of the notes in a sample.
-    """
+    ####################################################################################################################
 
     def display_midi(self, file_name: str):
+        r"""
+        Plots a piano roll of the notes in a sample.
+        """
+
         notes = self.get_notes(file_name)
 
         plt.figure(figsize=(20, 4))
@@ -119,11 +127,13 @@ class MidiHandler:
         plt.title(file_name)
         plt.show()
 
-    r"""
-    TODO
-    """
+    ####################################################################################################################
 
     def display_audio(self, pm, seconds=30):
+        r"""
+        TODO
+        """
+
         waveform = pm.fluidsynth(fs=self._SAMPLING_RATE)
         waveform_short = waveform[: seconds * self._SAMPLING_RATE]
         return display.Audio(waveform_short, rate=self._SAMPLING_RATE)
