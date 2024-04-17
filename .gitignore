@@ -1,3 +1,6 @@
 __pycache__
 *-output.*
 .venv
+conda
+output.mid
+data

@@ -2,3 +2,8 @@
 * text eol=lf
 
 *.mid binary
+*.midi binary
+*.gz binary
+*.tar binary
+*.zip binary
+*.pt binary
