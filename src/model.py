@@ -7,6 +7,7 @@ class LSTMModel(nn.Module):
 
         self.hidden_size = hidden_size
         self.lstm = nn.LSTM(input_size, hidden_size)
+        self.lstm.flatten_parameters()
         self.pitch_fc = nn.Linear(hidden_size, output_size)
         self.step_fc = nn.Linear(hidden_size, 1)
         self.duration_fc = nn.Linear(hidden_size, 1)

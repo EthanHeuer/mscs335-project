@@ -25,6 +25,9 @@ class MidiModel:
         self.batch_size = 64
         self.learning_rate = 0.0005
 
+        self.sample_range_from = 0
+        self.sample_range_to = None
+
         self.input_size = 128
         self.hidden_size = 256
         self.output_size = 128
