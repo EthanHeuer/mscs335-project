@@ -1,27 +1,13 @@
-import torch
-from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 
 
-class DataHandler(Dataset):
-    def __init__(self, X):
-        self.X = X
-
-        self.len = self.X.shape[0]
-
-    def __getitem__(self, index):
-        return self.X[index]
-
-    def __len__(self):
-        return self.len
-
-
 class LSTMModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size: int, hidden_size: int, output_size: int):
         super(LSTMModel, self).__init__()
 
         self.hidden_size = hidden_size
         self.lstm = nn.LSTM(input_size, hidden_size)
+        self.lstm.flatten_parameters()
         self.pitch_fc = nn.Linear(hidden_size, output_size)
         self.step_fc = nn.Linear(hidden_size, 1)
         self.duration_fc = nn.Linear(hidden_size, 1)

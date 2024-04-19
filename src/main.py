@@ -1,12 +1,12 @@
 import torch
-from model_handler import ModelHandler
+from midi_model import MidiModel
 
 
 ######################################################################################
 # VARIABLES
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-mh = ModelHandler(device)
+mh = MidiModel(device)
 print(f"Running on: {device}")
 
 
@@ -21,7 +21,7 @@ print(f"Number of Samples: {len(mh.midi.files)}")
 ######################################################################################
 # GET NOTES FROM SAMPLES
 
-train_notes = mh.get_train_notes("../data/notes.pt")
+train_notes = mh.load_train_notes("../data")
 print("Number of notes parsed:", len(train_notes))
 
 
@@ -32,9 +32,7 @@ epochs = 50
 batch_size = 16
 learning_rate = 0.0005
 
-data, loader, model, criterion, optimizer = mh.create_model(
-    epochs, batch_size, learning_rate
-)
+data, loader, model, criterion, optimizer = mh.create_model(epochs, batch_size, learning_rate)
 
 
 ######################################################################################
@@ -51,9 +49,7 @@ num_predictions = 120
 seq_length = 25
 temperature = 5.0
 
-generated_notes, out_pm = mh.generate_notes(
-    raw_notes, num_predictions, seq_length, temperature
-)
+generated_notes, out_pm = mh.generate_notes(raw_notes, num_predictions, seq_length, temperature)
 
 # mh.midi.display_audio(out_pm)
 # handler.plot_piano_roll(generated_notes)
