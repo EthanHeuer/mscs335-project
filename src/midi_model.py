@@ -48,6 +48,7 @@ class MidiModel:
         self.notes_dir = pathlib.Path(self.output_dir / "notes")
         self.maestro_dir = pathlib.Path(self.output_dir / "maestro-v2.0.0")
         self.generated_dir = pathlib.Path(self.output_dir / "generated")
+        self.models_dir = pathlib.Path(self.output_dir / "models")
 
     ####################################################################################################################
 
@@ -60,12 +61,13 @@ class MidiModel:
         self.checkpoints_dir.mkdir(parents=True, exist_ok=True)
         self.notes_dir.mkdir(parents=True, exist_ok=True)
         self.generated_dir.mkdir(parents=True, exist_ok=True)
+        self.models_dir.mkdir(parents=True, exist_ok=True)
 
     ####################################################################################################################
 
-    def load_train_notes(self, range_from: int = 0, range_to: int | None = None):
+    def load_train_notes(self, prefix: str, range_from: int = 0, range_to: int | None = None):
         r"""
-        Loads notes from samples in a given range. Saves the notes to a file for future use: `data/notes/range-{range_from}-{range_to}.pt`.
+        Loads notes from samples in a given range. Saves the notes to a file for future use: `data/notes/{prefix}-{range_from}-{range_to}.pt`.
 
         If the file already exists, the notes are loaded from the file.
         """
@@ -73,7 +75,7 @@ class MidiModel:
         if range_to is None:
             range_to = len(self.midi.files)
 
-        notes_file = pathlib.Path(self.notes_dir / f"range-{range_from}-{range_to}.pt")
+        notes_file = pathlib.Path(self.notes_dir / f"{prefix}-{range_from}-{range_to}.pt")
 
         if not notes_file.exists():
             print("Parsing notes from samples")
@@ -113,53 +115,47 @@ class MidiModel:
 
     ####################################################################################################################
 
-    def train_model(self):
-        r"""
-        Trains the model with the given data and parameters. Saves the model to a file for future use: `data/train.pt`.
+    def load_model(self, file_Name: str):
+        model_file = pathlib.Path(self.models_dir / f"{file_Name}.pt")
 
-        Checkpoints are saved after each epoch: `data/checkpoints/epoch_{epoch}.pt`.
-
-        If the model is already trained, it is loaded from the file.
-
-        TODO - Add a way to save multiple models based on range, epoch, batch size, and learning rate.
-        """
-
-        model_file = pathlib.Path(self.output_dir / "train.pt")
-
-        if not model_file.exists():
-            start = time.time()
-
-            for epoch in range(self.epochs):
-                print(f"Epoch {epoch + 1}/{self.epochs}", end=" ")
-                start_epoch = time.time()
-                running_loss = 0.0
-
-                for i, item in enumerate(self.loader, 0):
-                    input = item.to(self.device)
-                    self.optimizer.zero_grad()
-                    output = self.model(input)
-
-                    pitch_loss = self.criterion["pitch"](output["pitch"], input[:, 0].long()) * self.pitch_weight
-                    step_loss = self.criterion["step"](output["step"], input[:, 1].view(-1, 1)) * self.step_weight
-                    duration_loss = self.criterion["duration"](output["duration"], input[:, 2].view(-1, 1)) * self.duration_weight
-                    loss = pitch_loss + step_loss + duration_loss
-
-                    loss.backward()
-                    self.optimizer.step()
-
-                    running_loss += loss.item()
-
-                print(f"({time.time() - start_epoch:.2f}s)")
-                print(f"  Loss: {running_loss / len(self.loader)}")
-
-                torch.save(self.model.state_dict(), self.output_dir / f"checkpoints/epoch_{epoch}.pt")
-
-            print(f"Training Time: {time.time() - start:.2f}s")
-            torch.save(self.model.state_dict(), model_file)
-
-        else:
-            print("Model already trained")
+        if model_file.exists():
             self.model.load_state_dict(torch.load(model_file))
+            print("Model loaded")
+        else:
+            print("Model not found")
+
+    ####################################################################################################################
+
+    def train_model(self):
+        start = time.time()
+
+        for epoch in range(self.epochs):
+            print(f"Epoch {epoch + 1}/{self.epochs}", end=" ")
+            start_epoch = time.time()
+            running_loss = 0.0
+
+            for i, item in enumerate(self.loader, 0):
+                input = item.to(self.device)
+                self.optimizer.zero_grad()
+                output = self.model(input)
+
+                pitch_loss = self.criterion["pitch"](output["pitch"], input[:, 0].long()) * self.pitch_weight
+                step_loss = self.criterion["step"](output["step"], input[:, 1].view(-1, 1)) * self.step_weight
+                duration_loss = self.criterion["duration"](output["duration"], input[:, 2].view(-1, 1)) * self.duration_weight
+                loss = pitch_loss + step_loss + duration_loss
+
+                loss.backward()
+                self.optimizer.step()
+
+                running_loss += loss.item()
+
+            print(f"({time.time() - start_epoch:.2f}s)")
+            print(f"  Loss: {running_loss / len(self.loader)}")
+
+            torch.save(self.model.state_dict(), self.checkpoints_dir / f"epoch-{epoch}.pt")
+
+        print(f"Training Time: {time.time() - start:.2f}s")
+        torch.save(self.model.state_dict(), self.models_dir / f"model-{time.time():.0f}.pt")
 
     ####################################################################################################################
 
@@ -207,15 +203,16 @@ class MidiModel:
 
         generated_notes = pd.DataFrame(generated_notes, columns=(*key_order, "start", "end"))
 
-        outfile = str(self.generated_dir / "output.mid")
+        outfile = str(self.generated_dir / f"{time.time():.0f}.mid")
         out_pm = self.midi.notes_to_midi(generated_notes, outfile, pretty_midi.constants.INSTRUMENT_MAP[0])
 
-        return generated_notes, out_pm
+        return generated_notes, out_pm, outfile
 
     ####################################################################################################################
 
     def load_train_data(self):
         r"""
+        @deprecated
         TODO
         """
 

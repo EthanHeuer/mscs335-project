@@ -1,55 +1,49 @@
 import torch
 from midi_model import MidiModel
 
+mh = MidiModel()
+mh.init_data_dir()
+# mh.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+mh.device = "cpu"
 
-######################################################################################
-# VARIABLES
+# Training Parameters
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-mh = MidiModel(device)
-print(f"Running on: {device}")
+mh.epochs = 100
+mh.batch_size = 16
+mh.learning_rate = 0.0005
 
+mh.sample_range_from = 0
+mh.sample_range_to = 1
 
-######################################################################################
-# LOAD FILES
+# LSTM Model Parameters
 
-mh.midi.load_files("../data/maestro/**/*.mid*")
-# mh.midi.load_files("../data/Cymatics/*.mid*")
-print(f"Number of Samples: {len(mh.midi.files)}")
+mh.input_size = 512
+mh.hidden_size = 256
+mh.output_size = 128
 
+# LSTM Training Loss Parameters
 
-######################################################################################
-# GET NOTES FROM SAMPLES
+mh.pitch_weight = 1.0
+mh.step_weight = 1.0
+mh.duration_weight = 10.0
 
-train_notes = mh.load_train_notes("../data")
-print("Number of notes parsed:", len(train_notes))
+####################################################################################################################
 
+# Create Model
 
-######################################################################################
-# SETUP MODEL
-
-epochs = 50
-batch_size = 16
-learning_rate = 0.0005
-
-data, loader, model, criterion, optimizer = mh.create_model(epochs, batch_size, learning_rate)
-
-
-######################################################################################
-# TRAIN MODEL
-
+mh.midi.load_files("../data/samples/input.mid")
+mh.load_train_notes("base", mh.sample_range_from, mh.sample_range_to)
+mh.create_model()
 mh.train_model()
 
+####################################################################################################################
 
-######################################################################################
-# PREDICT NOTES
+# Generate Notes
 
-raw_notes = mh.midi.get_notes(mh.midi.files[0])
-num_predictions = 120
-seq_length = 25
-temperature = 5.0
+input = mh.midi.files[mh.sample_range_from]
+input_notes = mh.midi.get_notes(input)
+num_predictions = 100
+seq_length = 250
+temperature = 1
 
-generated_notes, out_pm = mh.generate_notes(raw_notes, num_predictions, seq_length, temperature)
-
-# mh.midi.display_audio(out_pm)
-# handler.plot_piano_roll(generated_notes)
+generated_notes, out_pm, outfile = mh.generate_notes(input_notes, num_predictions, seq_length, temperature)
