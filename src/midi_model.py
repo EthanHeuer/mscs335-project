@@ -187,7 +187,7 @@ class MidiModel:
 
         key_order = ["pitch", "step", "duration"]
         sample_notes = np.stack([raw_notes[key] for key in key_order], axis=1)
-        input_notes = sample_notes[:seq_length]
+        input_notes = sample_notes
 
         generated_notes = []
         prev_start = 0
